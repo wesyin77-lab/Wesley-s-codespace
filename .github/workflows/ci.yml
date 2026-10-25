@@ -53,6 +53,7 @@ jobs:
           if [ -f "$HOME/.orb/error.log" ]; then cat "$HOME/.orb/error.log"; exit 1; fi
           kill -0 $pid || { echo "Orb exited during startup"; exit 1; }
           test -f "$ORB_DIR/todo.md" || { echo "Orb did not create todo.md"; exit 1; }
+          grep -q "widget on the desktop layer" "$RUNNER_TEMP/orb.log" || { echo "The widget did not reach the desktop layer"; exit 1; }
           kill $pid
       - uses: actions/upload-artifact@v4
         with:

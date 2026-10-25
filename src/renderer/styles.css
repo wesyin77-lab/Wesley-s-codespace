@@ -318,3 +318,11 @@ details summary { cursor: pointer; color: var(--accent); font-size: 12px; }
 .help li { margin: 4px 0; }
 .check { display: flex; gap: 6px; align-items: center; cursor: pointer; }
 kbd { font: 11px var(--mono); border: 1px solid var(--line); border-radius: 4px; padding: 1px 4px; background: var(--hover); }
+
+/* ---- desktop widget mode ---------------------------------------------------- */
+
+body.widget #ball, body.widget #dock-tab { display: none; }
+body.widget #composer { flex-basis: auto; padding: 10px 14px 8px; }
+/* The date header is the handle for moving the widget around the desktop. */
+body.widget #head { -webkit-app-region: drag; cursor: grab; }
+body.widget #head button { -webkit-app-region: no-drag; }

@@ -42,14 +42,23 @@ npm start
 
 ## Use it
 
+**Desktop widget (default).** Orb sits on your desktop like a Mac widget: behind your
+app windows, in the same place on every desktop/Space. Drag it by the date at the top
+to move it, and it remembers the spot. Press <kbd>⌘ Shift Space</kbd> to bring it
+in front for a moment to type a task; it goes back behind when you click away.
+
+Prefer the original floating ball that stays on top of everything? Right-click Orb →
+**Switch to floating ball** (and back the same way).
+
+
 | Do this | How |
 |---|---|
 | Add a task | Type in the box at the bottom: `essay fri 5pm #study`. The line underneath shows what Orb understood before you press Enter. |
 | Open from the keyboard | <kbd>⌘ Shift Space</kbd> (Windows: <kbd>Ctrl Shift Space</kbd>) |
 | Edit | Double-click a task (or focus it and press Enter) |
 | Block time for it | Hover a task → ◷. Orb suggests your next free half hour. |
-| Move the ball | Drag it. Drop it on a screen edge to tuck it away as a thin tab. |
-| Pin / unpin | Click the ball |
+| Move it | Widget: drag the date header. Ball: drag the ball; drop it on a screen edge to tuck it away as a thin tab. |
+| Pin / unpin (ball mode) | Click the ball |
 | Everything else | Right-click the ball (open the file, start at login, quit) |
 
 Quick-add tips: `#section` picks the section (a new name creates one), dates like

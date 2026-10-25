@@ -12,8 +12,9 @@ import { createServer } from 'node:http'
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 import {
-  BALL_WINDOW_SIZE, CHROME_INSET, FloatingPlacement, clampedBallOrigin, initialWindowBounds,
+  BALL_WINDOW_SIZE, CHROME_INSET, FloatingPlacement, PANEL_WINDOW_SIZE, clampedBallOrigin, initialWindowBounds,
 } from './geometry.js'
+import { pinToDesktop, widgetBounds } from './widget.js'
 import { claudeCodeCommand, claudeDesktopStatus, connectClaudeDesktop, serverEntry } from './claude-setup.js'
 import { loadConfig, saveConfig } from '../core/config.js'
 import { Service } from '../core/service.js'
@@ -23,6 +24,9 @@ import { localDate, parseLocal } from '../core/dates.js'
 const FEED_REFRESH_MS = 15 * 60_000
 const REMINDER_TICK_MS = 30_000
 const E2E = process.env.ORB_E2E === '1'
+// 'widget' (default): fixed on the desktop behind your windows, like a macOS widget.
+// 'ball': the floating ball that stays on top of everything.
+const MODE = loadConfig().mode === 'ball' ? 'ball' : 'widget'
 
 if (!app.requestSingleInstanceLock()) app.quit()
 
@@ -46,18 +50,26 @@ function send(channel, payload) {
   if (win && !win.isDestroyed()) win.webContents.send(channel, payload)
 }
 
-function openWindow() {
+function initialBounds() {
+  const config = loadConfig()
   const work = screen.getPrimaryDisplay().workArea
-  const saved = loadConfig().ball
-  const bounds = saved && !E2E
+  if (MODE === 'widget') {
+    const areas = [work, ...screen.getAllDisplays().map((d) => d.workArea)]
+    return widgetBounds(E2E ? undefined : config.widget, PANEL_WINDOW_SIZE, areas)
+  }
+  const saved = config.ball
+  return saved && !E2E
     ? collapsedAt(clampedBallOrigin(saved, screen.getDisplayNearestPoint(saved).workArea))
     : initialWindowBounds(work)
+}
+
+function openWindow() {
   const created = new BrowserWindow({
     title: 'Orb',
-    ...bounds,
+    ...initialBounds(),
     frame: false,
     transparent: true,
-    alwaysOnTop: true,
+    alwaysOnTop: MODE === 'ball',
     resizable: false,
     movable: true,
     minimizable: false,
@@ -72,7 +84,7 @@ function openWindow() {
     // The default thick frame is a resize border. On a scaled display its DIP
     // inset does not match the bounds we set, so the ball stops short of the edge.
     ...process.platform === 'win32' ? { thickFrame: false } : {},
-    ...process.platform === 'darwin' ? { type: 'panel' } : {},
+    ...process.platform === 'darwin' && MODE === 'ball' ? { type: 'panel' } : {},
     webPreferences: {
       preload: fileURLToPath(new URL('./preload.cjs', import.meta.url)),
       contextIsolation: true,
@@ -82,10 +94,28 @@ function openWindow() {
     },
   })
   created.webContents.session.setPermissionRequestHandler((_wc, _permission, callback) => callback(false))
-  // Above full-screen apps too, and on every Space/virtual desktop.
-  created.setAlwaysOnTop(true, 'screen-saver')
-  if (process.platform === 'darwin') {
-    created.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true })
+  if (MODE === 'ball') {
+    // Above full-screen apps too, and on every Space/virtual desktop.
+    created.setAlwaysOnTop(true, 'screen-saver')
+    if (process.platform === 'darwin') {
+      created.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true })
+    }
+  } else {
+    let saveTimer
+    created.on('moved', () => {
+      clearTimeout(saveTimer)
+      saveTimer = setTimeout(() => {
+        const { x, y } = created.getBounds()
+        saveConfig({ widget: { x, y } })
+      }, 300)
+    })
+    // After the shortcut brought it forward to type in, it goes back to the desktop.
+    created.on('blur', () => {
+      if (!raised) return
+      raised = false
+      created.setAlwaysOnTop(false)
+      sendToDesktop(created)
+    })
   }
   created.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https?:\/\//i.test(url)) void shell.openExternal(url)
@@ -102,8 +132,31 @@ function openWindow() {
   created.on('closed', () => {
     if (!quitting) app.quit()
   })
-  created.once('ready-to-show', () => created.showInactive())
+  created.once('ready-to-show', () => {
+    created.showInactive()
+    if (MODE === 'widget') sendToDesktop(created)
+  })
   return created
+}
+
+let raised = false
+
+function sendToDesktop(target) {
+  try {
+    const level = pinToDesktop(target)
+    if (level !== undefined) console.log(`[orb] widget on the desktop layer (window level ${level})`)
+  } catch (error) {
+    // Still usable as an ordinary window that doesn't float; just say why.
+    console.error(`[orb] could not move the widget to the desktop layer: ${error.message}`)
+  }
+}
+
+/** Shortcut in widget mode: bring the widget in front of everything until it loses focus. */
+function raiseWidget() {
+  raised = true
+  win.setAlwaysOnTop(true, 'floating')
+  win.show()
+  win.focus()
 }
 
 function collapsedAt(ball) {
@@ -125,6 +178,14 @@ function showMenu() {
     { label: 'Refresh calendars', click: () => void refreshCalendars() },
     { type: 'separator' },
     { label: 'Start Orb at login', type: 'checkbox', checked: login.openAtLogin, click: (item) => app.setLoginItemSettings({ openAtLogin: item.checked }) },
+    {
+      label: MODE === 'widget' ? 'Switch to floating ball' : 'Switch to desktop widget',
+      click: () => {
+        saveConfig({ mode: MODE === 'widget' ? 'ball' : 'widget' })
+        app.relaunch()
+        app.exit(0)
+      },
+    },
     { type: 'separator' },
     { label: 'Quit Orb', role: 'quit' },
   ]).popup({ window: win })
@@ -301,17 +362,21 @@ handle('orb:click-through', (on) => {
 // Geometry, as in dsh-orb-cordis: the page only signals; positions come from the OS cursor.
 // Expanding never takes focus: hovering the ball must not steal the keyboard
 // from whatever the user is typing in. Only the hotkey (or a click) focuses.
-handle('orb:expand', (expanded) => placement.setExpanded(Boolean(expanded)))
-handle('orb:focus', () => win.focus())
-ipcMain.on('orb:drag-press', (event) => { if (fromBall(event)) placement.press(screen.getCursorScreenPoint()) })
-ipcMain.on('orb:drag-begin', (event) => { if (fromBall(event)) placement.beginDrag() })
-ipcMain.on('orb:drag-move', (event, canDock) => { if (fromBall(event)) placement.dragTo(screen.getCursorScreenPoint(), canDock !== false) })
+handle('orb:expand', (expanded) => placement?.setExpanded(Boolean(expanded)))
+handle('orb:focus', () => {
+  if (MODE === 'widget') raiseWidget()
+  else win.focus()
+})
+ipcMain.on('orb:drag-press', (event) => { if (fromBall(event)) placement?.press(screen.getCursorScreenPoint()) })
+ipcMain.on('orb:drag-begin', (event) => { if (fromBall(event)) placement?.beginDrag() })
+ipcMain.on('orb:drag-move', (event, canDock) => { if (fromBall(event)) placement?.dragTo(screen.getCursorScreenPoint(), canDock !== false) })
 handle('orb:drag-end', async (canDock) => {
+  if (!placement) return { docked: undefined }
   const result = await placement.endDrag(screen.getCursorScreenPoint(), canDock !== false)
   if (!result.docked) rememberBall()
   return result
 })
-handle('orb:unsnap', () => placement.unsnap())
+handle('orb:unsnap', () => placement?.unsnap())
 
 // ---- lifecycle ----------------------------------------------------------------
 
@@ -328,12 +393,20 @@ export const ready = app.whenReady().then(async () => {
   reloadService()
   await service.store.ensure()
   win = openWindow()
-  placement = new FloatingPlacement(win, (point) => {
-    const display = screen.getDisplayNearestPoint({ x: Math.round(point.x), y: Math.round(point.y) })
-    return { bounds: display.bounds, workArea: display.workArea }
-  }, () => screen.getAllDisplays().map((display) => display.bounds))
-  screen.on('display-removed', () => void placement.clamp(false))
-  screen.on('display-metrics-changed', () => void placement.clamp(false))
+  if (MODE === 'ball') {
+    placement = new FloatingPlacement(win, (point) => {
+      const display = screen.getDisplayNearestPoint({ x: Math.round(point.x), y: Math.round(point.y) })
+      return { bounds: display.bounds, workArea: display.workArea }
+    }, () => screen.getAllDisplays().map((display) => display.bounds))
+    screen.on('display-removed', () => void placement.clamp(false))
+    screen.on('display-metrics-changed', () => void placement.clamp(false))
+  } else {
+    // A monitor unplugged with the widget on it: bring it back onto a screen.
+    screen.on('display-removed', () => {
+      const areas = [screen.getPrimaryDisplay().workArea, ...screen.getAllDisplays().map((d) => d.workArea)]
+      win.setBounds(widgetBounds(win.getBounds(), PANEL_WINDOW_SIZE, areas))
+    })
+  }
 
   const config = loadConfig()
   if (!E2E) {
@@ -356,7 +429,7 @@ export const ready = app.whenReady().then(async () => {
     }
   }, 60_000)
 
-  await win.loadFile(fileURLToPath(new URL('../renderer/index.html', import.meta.url)))
+  await win.loadFile(fileURLToPath(new URL('../renderer/index.html', import.meta.url)), { query: { mode: MODE } })
   await pushState()
   void refreshCalendars()
 })

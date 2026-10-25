@@ -18,6 +18,7 @@
     "@modelcontextprotocol/sdk": "^1.32.2",
     "chrono-node": "^2.10.3",
     "ical.js": "^2.2.1",
+    "koffi": "^2.16.3",
     "zod": "^4.6.7"
   },
   "devDependencies": {

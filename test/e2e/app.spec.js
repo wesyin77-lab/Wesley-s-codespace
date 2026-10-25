@@ -62,6 +62,8 @@ test.beforeAll(async () => {
   await mkdir(join(dir, 'data'))
   await mkdir(shots, { recursive: true })
   await writeFile(join(dir, 'data', 'todo.md'), TODO)
+  // These tests drive the floating-ball mode (the widget is the same panel, always open).
+  await writeFile(join(dir, 'config.json'), JSON.stringify({ mode: 'ball' }))
   feedServer = createServer((req, res) => res.writeHead(200, { 'content-type': 'text/calendar' }).end(ICS()))
   await new Promise((resolve) => feedServer.listen(0, '127.0.0.1', resolve))
 

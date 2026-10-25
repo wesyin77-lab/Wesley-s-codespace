@@ -15,7 +15,9 @@ export const DEFAULTS = Object.freeze({
   dayStart: '08:00',
   dayEnd: '22:00',
   icsPort: 47110,
+  mode: 'widget',
   ball: null,
+  widget: null,
 })
 
 export function configPath() {

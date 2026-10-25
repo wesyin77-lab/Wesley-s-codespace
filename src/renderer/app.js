@@ -8,6 +8,8 @@
   'use strict'
 
   const api = window.orb
+  // 'widget': always open, fixed on the desktop. 'ball': the floating ball that expands on hover.
+  const WIDGET = new URLSearchParams(location.search).get('mode') !== 'ball'
   const COLLAPSE_MS = 350
   const ANIMATION_MS = 300
   const DOCK_HOVER_DELAY_MS = 800
@@ -209,6 +211,7 @@
   }
 
   async function setExpanded(next, force = false) {
+    if (WIDGET) return
     clearTimeout(collapseTimer)
     collapseTimer = undefined
     clearTimeout(collapseFrame)
@@ -265,6 +268,7 @@
   }
 
   document.body.addEventListener('pointerenter', (event) => {
+    if (WIDGET) return
     dockPointerInside = true
     if (pointerHeld && typeof event.buttons === 'number' && event.buttons === 0) void finishGesture()
     if (document.body.classList.contains('away')) {
@@ -274,6 +278,7 @@
     syncExpand()
   })
   document.body.addEventListener('pointerleave', () => {
+    if (WIDGET) return
     dockPointerInside = false
     suppressExpand = false
     if (pointerHeld || dragging) return
@@ -350,6 +355,7 @@
 
   // Typing anywhere in the panel pins it, so it can't collapse under your cursor mid-sentence.
   panel.addEventListener('focusin', (event) => {
+    if (WIDGET) return
     if (event.target.matches('input[type="text"], input[type="url"], input[type="datetime-local"], select, .edit')) setPinned(true)
   })
 
@@ -365,14 +371,15 @@
       showView('todo')
       return
     }
-    setPinned(false)
     input.blur()
+    if (WIDGET) return
+    setPinned(false)
     void setExpanded(false, true)
   })
 
   api.onSummon(async () => {
     if (docked !== undefined) await unsnapDocked()
-    setPinned(true)
+    if (!WIDGET) setPinned(true)
     await setExpanded(true)
     await api.focus()
     if (view === 'settings') showView('todo')
@@ -439,7 +446,7 @@
   $('#settings-back').addEventListener('click', () => showView('todo'))
   api.onShow(async (name) => {
     await setExpanded(true)
-    setPinned(true)
+    if (!WIDGET) setPinned(true)
     showView(name)
   })
 
@@ -810,6 +817,16 @@
   $('#open-file').addEventListener('click', () => attempt(() => api.openFile()))
   $('#open-folder').addEventListener('click', () => attempt(() => api.openFolder()))
   $('#open-at-login').addEventListener('change', (event) => attempt(() => api.setLogin(event.target.checked)))
+
+  if (WIDGET) {
+    // A widget is the panel itself: always open, no ball, moved by dragging its header.
+    document.body.classList.remove('expand-left', 'expand-up')
+    document.body.classList.add('widget')
+    panel.hidden = false
+    expanded = true
+    requestAnimationFrame(() => document.body.classList.add('expanded'))
+    $('#head').title = 'Drag here to move'
+  }
 
   // ---- data -----------------------------------------------------------------------
 
