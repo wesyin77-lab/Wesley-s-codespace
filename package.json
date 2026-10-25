@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "description": "A floating to-do ball with a calendar, backed by a plain Markdown file that your AI can edit.",
   "type": "module",
-  "main": "src/main/main.js",
+  "main": "src/main/boot.js",
   "license": "MIT",
   "private": true,
   "scripts": {
@@ -53,7 +53,8 @@
       "identity": "-",
       "extendInfo": {
         "LSUIElement": true
-      }
+      },
+      "hardenedRuntime": false
     },
     "win": {
       "target": [

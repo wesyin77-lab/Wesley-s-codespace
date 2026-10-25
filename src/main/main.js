@@ -323,7 +323,7 @@ app.on('before-quit', () => {
 })
 app.on('window-all-closed', () => app.quit())
 
-void app.whenReady().then(async () => {
+export const ready = app.whenReady().then(async () => {
   if (process.platform === 'darwin') app.dock?.hide()
   reloadService()
   await service.store.ensure()

@@ -40,6 +40,20 @@ jobs:
       - run: npx electron-builder --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      # The built app must actually start on a real Mac and stay running.
+      - name: Smoke test the built app
+        if: runner.os == 'macOS'
+        run: |
+          codesign --verify --deep --strict dist/mac-arm64/Orb.app
+          export ORB_DIR="$RUNNER_TEMP/orb" ORB_CONFIG="$RUNNER_TEMP/orb-config.json" ORB_E2E=1
+          dist/mac-arm64/Orb.app/Contents/MacOS/Orb > "$RUNNER_TEMP/orb.log" 2>&1 &
+          pid=$!
+          sleep 15
+          cat "$RUNNER_TEMP/orb.log"
+          if [ -f "$HOME/.orb/error.log" ]; then cat "$HOME/.orb/error.log"; exit 1; fi
+          kill -0 $pid || { echo "Orb exited during startup"; exit 1; }
+          test -f "$ORB_DIR/todo.md" || { echo "Orb did not create todo.md"; exit 1; }
+          kill $pid
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.name }}
