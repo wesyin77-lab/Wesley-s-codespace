@@ -38,7 +38,7 @@ contextBridge.exposeInMainWorld('orb', {
   dragMove: (canDock) => ipcRenderer.send('orb:drag-move', canDock !== false),
   dragEnd: invoke('orb:drag-end'),
   unsnap: invoke('orb:unsnap'),
-  resizeBegin: () => ipcRenderer.send('orb:resize-begin'),
+  resizeBegin: (direction) => ipcRenderer.send('orb:resize-begin', direction),
   resizeMove: () => ipcRenderer.send('orb:resize-move'),
   resizeEnd: () => ipcRenderer.send('orb:resize-end'),
 

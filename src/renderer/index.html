@@ -108,7 +108,15 @@
         <input id="quick-add" type="text" maxlength="300" placeholder="Add a task… e.g. essay fri 5pm #study" aria-describedby="preview">
         <div id="preview"></div>
       </form>
-      <div id="resize-grip" title="Drag to resize" aria-hidden="true"></div>
     </section>
+    <!-- Widget mode: drag any edge or corner to resize, like a window. -->
+    <div class="resize edge" data-resize="n" aria-hidden="true"></div>
+    <div class="resize edge" data-resize="s" aria-hidden="true"></div>
+    <div class="resize edge" data-resize="e" aria-hidden="true"></div>
+    <div class="resize edge" data-resize="w" aria-hidden="true"></div>
+    <div class="resize corner" data-resize="nw" aria-hidden="true"></div>
+    <div class="resize corner" data-resize="ne" aria-hidden="true"></div>
+    <div class="resize corner" data-resize="sw" aria-hidden="true"></div>
+    <div class="resize corner" id="resize-grip" data-resize="se" title="Drag to resize" aria-hidden="true"></div>
   </body>
 </html>

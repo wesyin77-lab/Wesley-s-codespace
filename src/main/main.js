@@ -70,6 +70,9 @@ function openWindow() {
     frame: false,
     transparent: true,
     alwaysOnTop: MODE === 'ball',
+    // A widget behind other apps must react to the first click (tick a box, grab the
+    // resize corner) instead of the click only switching to Orb, like system widgets.
+    acceptFirstMouse: MODE === 'widget',
     resizable: false,
     movable: true,
     minimizable: false,
@@ -403,21 +406,22 @@ handle('orb:unsnap', () => placement?.unsnap())
 // Widget resize corner: like dragging the ball, the page only signals and the
 // size comes from the OS cursor, so the window moving under it can't feed back.
 let resizeStart
-ipcMain.on('orb:resize-begin', (event) => {
-  if (!fromBall(event) || MODE !== 'widget') return
-  resizeStart = { bounds: win.getBounds(), cursor: screen.getCursorScreenPoint() }
+ipcMain.on('orb:resize-begin', (event, edges) => {
+  if (!fromBall(event) || MODE !== 'widget' || typeof edges !== 'string' || !/^[nsew]{1,2}$/.test(edges)) return
+  resizeStart = { bounds: win.getBounds(), cursor: screen.getCursorScreenPoint(), edges }
 })
 ipcMain.on('orb:resize-move', (event) => {
   if (!fromBall(event) || !resizeStart) return
   const cursor = screen.getCursorScreenPoint()
   const area = screen.getDisplayNearestPoint(resizeStart.bounds).workArea
-  win.setBounds(resizedBounds(resizeStart.bounds, { x: cursor.x - resizeStart.cursor.x, y: cursor.y - resizeStart.cursor.y }, CHROME_INSET, area))
+  const delta = { x: cursor.x - resizeStart.cursor.x, y: cursor.y - resizeStart.cursor.y }
+  win.setBounds(resizedBounds(resizeStart.bounds, delta, resizeStart.edges, CHROME_INSET, area))
 })
 ipcMain.on('orb:resize-end', (event) => {
   if (!fromBall(event) || !resizeStart) return
   resizeStart = undefined
-  const { width, height } = win.getBounds()
-  saveConfig({ widgetSize: { width: width - 2 * CHROME_INSET, height: height - 2 * CHROME_INSET } })
+  const { x, y, width, height } = win.getBounds()
+  saveConfig({ widgetSize: { width: width - 2 * CHROME_INSET, height: height - 2 * CHROME_INSET }, widget: { x, y } })
 })
 
 // ---- lifecycle ----------------------------------------------------------------

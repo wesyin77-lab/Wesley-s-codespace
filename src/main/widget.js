@@ -90,17 +90,33 @@ export const WIDGET_MIN = { width: 260, height: 280 }
 export const WIDGET_MAX = { width: 900, height: 1200 }
 
 /**
- * Window bounds while dragging the resize corner: the top-left stays put, the size
- * follows the cursor, clamped to sensible limits and to the screen.
+ * Window bounds while dragging an edge or corner. `edges` is any of n/s/e/w
+ * (e.g. "nw" for the top-left corner): the dragged edges follow the cursor and
+ * the opposite ones stay put, clamped to sensible sizes and to the screen.
  */
-export function resizedBounds(start, delta, chrome, workArea) {
+export function resizedBounds(start, delta, edges, chrome, area) {
   const clamp = (value, min, max) => Math.min(Math.max(value, min), Math.max(min, max))
-  return {
-    x: start.x,
-    y: start.y,
-    width: Math.round(clamp(start.width + delta.x, WIDGET_MIN.width + 2 * chrome,
-      Math.min(WIDGET_MAX.width + 2 * chrome, workArea.x + workArea.width - start.x + chrome))),
-    height: Math.round(clamp(start.height + delta.y, WIDGET_MIN.height + 2 * chrome,
-      Math.min(WIDGET_MAX.height + 2 * chrome, workArea.y + workArea.height - start.y + chrome))),
+  const minW = WIDGET_MIN.width + 2 * chrome
+  const minH = WIDGET_MIN.height + 2 * chrome
+  const maxW = WIDGET_MAX.width + 2 * chrome
+  const maxH = WIDGET_MAX.height + 2 * chrome
+  // The transparent chrome may hang past the screen edge; the card itself may not.
+  const left = area.x - chrome
+  const top = area.y - chrome
+  const right = area.x + area.width + chrome
+  const bottom = area.y + area.height + chrome
+  let { x, y, width, height } = start
+  if (edges.includes('e')) width = clamp(start.width + delta.x, minW, Math.min(maxW, right - start.x))
+  if (edges.includes('w')) {
+    const fixed = start.x + start.width
+    width = clamp(start.width - delta.x, minW, Math.min(maxW, fixed - left))
+    x = fixed - width
   }
+  if (edges.includes('s')) height = clamp(start.height + delta.y, minH, Math.min(maxH, bottom - start.y))
+  if (edges.includes('n')) {
+    const fixed = start.y + start.height
+    height = clamp(start.height - delta.y, minH, Math.min(maxH, fixed - top))
+    y = fixed - height
+  }
+  return { x: Math.round(x), y: Math.round(y), width: Math.round(width), height: Math.round(height) }
 }

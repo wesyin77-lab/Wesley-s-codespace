@@ -327,21 +327,37 @@ body.widget #composer { flex-basis: auto; padding: 10px 14px 8px; }
 body.widget #head { -webkit-app-region: drag; cursor: grab; }
 body.widget #head button { -webkit-app-region: no-drag; }
 
-/* Resize corner, bottom-right of the card. */
-#resize-grip { display: none; }
-body.widget #resize-grip {
-  display: block;
+/* Resize handles on every edge and corner. They sit over the card's border and the
+ * transparent margin around it, and opt out of the header's drag-to-move region. */
+.resize { display: none; position: absolute; z-index: 5; -webkit-app-region: no-drag; }
+body.widget .resize { display: block; }
+.edge[data-resize="n"] { top: 4px; left: 36px; right: 36px; height: 12px; cursor: ns-resize; }
+.edge[data-resize="s"] { bottom: 4px; left: 36px; right: 36px; height: 12px; cursor: ns-resize; }
+.edge[data-resize="e"] { right: 4px; top: 36px; bottom: 36px; width: 12px; cursor: ew-resize; }
+.edge[data-resize="w"] { left: 4px; top: 36px; bottom: 36px; width: 12px; cursor: ew-resize; }
+.corner { width: 30px; height: 30px; }
+.corner[data-resize="nw"] { top: 2px; left: 2px; cursor: nwse-resize; }
+.corner[data-resize="ne"] { top: 2px; right: 2px; cursor: nesw-resize; }
+.corner[data-resize="sw"] { bottom: 2px; left: 2px; cursor: nesw-resize; }
+.corner[data-resize="se"] { bottom: 2px; right: 2px; cursor: nwse-resize; }
+/* A visible mark in the bottom-right corner, so it's clear the widget can be resized. */
+#resize-grip::after {
+  content: "";
   position: absolute;
-  right: 4px;
-  bottom: 4px;
-  width: 16px;
-  height: 16px;
-  cursor: nwse-resize;
-  background: linear-gradient(135deg, transparent 0 55%, var(--muted) 55% 62%, transparent 62% 72%, var(--muted) 72% 79%, transparent 79%);
-  opacity: 0.5;
-  z-index: 3;
+  right: 14px;
+  bottom: 14px;
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  border-bottom-right-radius: 4px;
+  opacity: 0.55;
+  transition: opacity 150ms;
 }
-body.widget #resize-grip:hover { opacity: 1; }
+body.widget:hover #resize-grip::after { opacity: 0.9; }
+#resize-grip:hover::after { opacity: 1; border-color: var(--accent); }
+/* Keep the task box clear of the corner handle. */
+body.widget #composer { padding-right: 30px; }
 
 /* Small widget sizes: tighter spacing so the list keeps the room. */
 @media (max-height: 420px) {

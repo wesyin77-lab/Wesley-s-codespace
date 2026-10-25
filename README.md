@@ -44,7 +44,7 @@ npm start
 
 **Desktop widget (default).** Orb sits on your desktop like a Mac widget: behind your
 app windows, in the same place on every desktop/Space. Drag it by the date at the top
-to move it, and it remembers the spot. Drag the bottom-right corner to resize it, or
+to move it, and it remembers the spot. Drag any edge or corner to resize it, like a window, or
 right-click → **Widget size** → *Same as a large Mac widget* to line it up with your other widgets. Press <kbd>⌘ Shift Space</kbd> to bring it
 in front for a moment to type a task; it goes back behind when you click away.
 
