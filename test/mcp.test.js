@@ -84,6 +84,25 @@ describe('MCP server over stdio', () => {
     assert.equal(await file(), withHotel, 'an ambiguous call writes nothing')
   })
 
+  it('never puts a calendar\'s secret link into the chat', async () => {
+    const config = join(dir, 'cfg', 'config.json')
+    const secret = 'https://outlook.office365.com/owa/calendar/SECRET-ID@school.edu/SECRET-KEY/calendar.ics'
+    const current = JSON.parse(await readFile(config, 'utf8'))
+    await writeFile(config, JSON.stringify({ ...current, feeds: [{ name: 'School', url: secret }] }))
+    // The server reads its config at start, so ask a fresh server.
+    const other = new Client({ name: 'orb-test-2', version: '1.0.0' })
+    await other.connect(new StdioClientTransport({ command: process.execPath, args: [server], env: { ...process.env, ORB_CONFIG: config }, stderr: 'ignore' }))
+    try {
+      const result = await other.callTool({ name: 'refresh_calendars', arguments: {} })
+      const text = result.content.map((c) => c.text).join('\n')
+      assert.match(text, /School/)
+      assert.doesNotMatch(text, /SECRET|outlook\.office365/)
+    } finally {
+      await other.close()
+      await writeFile(config, JSON.stringify(current))
+    }
+  })
+
   it('completes, and logs the change as Claude\'s', async () => {
     const done = await call('complete_task', { task: 'book hotel' })
     assert.match(done.text, /Completed "book hotel"/)

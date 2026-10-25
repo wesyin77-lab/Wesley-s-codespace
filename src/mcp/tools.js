@@ -183,7 +183,8 @@ export function createServer(service = new Service()) {
   }, guard(async () => {
     const results = await refreshFeeds(service.config.feeds, service.paths)
     if (results.length === 0) return ok('No calendars are subscribed yet. The user can add one in Orb → Settings.')
-    return ok(results.map((r) => `${r.ok ? '✓' : '✗'} ${r.url.replace(/(private-|\/private\/)[^/]+/, '$1…')}${r.ok ? '' : `: ${r.error}`}`).join('\n'))
+    // Report calendars by name only: a feed link is a secret and must not end up in the chat.
+    return ok(results.map((r, i) => `${r.ok ? '✓' : '✗'} ${service.config.feeds[i]?.name || `Calendar ${i + 1}`}${r.ok ? '' : `: ${r.error}`}`).join('\n'))
   }))
 
   return server
