@@ -18,7 +18,8 @@ const MAX_OCCURRENCES = 50_000
  * { id, title, start: Date, end: Date, allDay, location, calendar, color, busy }.
  */
 export function parseIcs(text, { from, to, calendar = '', color } = {}) {
-  const root = new ICAL.Component(ICAL.parse(text))
+  // Outlook/Exchange feeds start with a UTF-8 byte-order mark, which ical.js can't parse.
+  const root = new ICAL.Component(ICAL.parse(String(text).replace(/^\uFEFF/, '')))
   for (const vtz of root.getAllSubcomponents('vtimezone')) {
     const tzid = vtz.getFirstPropertyValue('tzid')
     if (tzid && !ICAL.TimezoneService.has(tzid)) ICAL.TimezoneService.register(vtz)

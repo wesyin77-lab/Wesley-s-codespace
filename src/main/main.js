@@ -7,7 +7,7 @@
  * (MIT), packages/helper/src/main.ts.
  */
 
-import { app, BrowserWindow, Menu, Notification, clipboard, globalShortcut, ipcMain, screen, shell } from 'electron'
+import { app, BrowserWindow, Menu, Notification, clipboard, globalShortcut, ipcMain, net, screen, shell } from 'electron'
 import { createServer } from 'node:http'
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
@@ -232,7 +232,8 @@ async function refreshCalendars() {
     send('orb:calendar-changed')
     return feedStatus
   }
-  feedStatus = await refreshFeeds(config.feeds, service.paths)
+  // Chromium's network stack, not Node's: it follows the Mac's proxy/VPN settings like the browser does.
+  feedStatus = await refreshFeeds(config.feeds, service.paths, { fetchImpl: (url, init) => net.fetch(url, init) })
   send('orb:calendar-changed')
   return feedStatus
 }
