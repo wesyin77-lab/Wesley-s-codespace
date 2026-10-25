@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld('orb', {
   update: invoke('orb:update'),
   remove: invoke('orb:remove'),
   plan: invoke('orb:plan'),
+  removeSection: invoke('orb:remove-section'),
   calendar: invoke('orb:calendar'),
   freeTime: invoke('orb:free-time'),
   settings: invoke('orb:settings'),

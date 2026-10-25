@@ -333,6 +333,10 @@ handle('orb:remove', async (id) => {
   await service.remove('panel', str(id, 64))
   await pushState()
 })
+handle('orb:remove-section', async (name) => {
+  await service.removeSection('panel', str(name, 60))
+  await pushState()
+})
 handle('orb:plan', async (id, start, minutes) => {
   await service.plan('panel', str(id, 64), start === null ? null : str(start, 16), Number(minutes) || 30)
   await pushState()

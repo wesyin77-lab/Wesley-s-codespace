@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import fc from 'fast-check'
 import {
   parse, addTask, updateTask, deleteTask, findByText, findById, formatTask,
-  parseDuration, formatDuration, isValidDue, starterFile, TaskNotFoundError,
+  parseDuration, formatDuration, isValidDue, starterFile, TaskNotFoundError, deleteSection,
 } from '../src/core/format.js'
 
 // The file from the video, typed out.
@@ -218,5 +218,27 @@ describe('properties (fast-check)', () => {
       assert.equal(task.title, title)
       assert.equal(task.due, due ?? undefined)
     }), { numRuns: 500 })
+  })
+})
+
+describe('deleteSection', () => {
+  it('removes an empty section and the blank line with it', () => {
+    const text = '## work\n- [ ] a\n\n## studdy\n\n## study\n- [ ] b\n'
+    assert.equal(deleteSection(text, 'studdy'), '## work\n- [ ] a\n\n## study\n- [ ] b\n')
+  })
+
+  it('refuses while open tasks are left, and changes nothing', () => {
+    assert.throws(() => deleteSection(VIDEO, 'life'), /still has 3 tasks/)
+  })
+
+  it('keeps finished tasks (they join the section above)', () => {
+    const text = '## work\n- [ ] a\n\n## old\n- [x] done thing done:2026-10-01\n'
+    const out = deleteSection(text, 'OLD')
+    assert.equal(out, '## work\n- [ ] a\n- [x] done thing done:2026-10-01\n')
+    assert.equal(parse(out).tasks.length, 2)
+  })
+
+  it('says so when the section does not exist', () => {
+    assert.throws(() => deleteSection(VIDEO, 'nope'), /no section called "nope"/)
   })
 })

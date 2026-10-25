@@ -312,3 +312,26 @@ export function deleteTask(text, task) {
   return join(doc)
 }
 
+
+/**
+ * Remove a `## section` heading. Only allowed when no open task is left in it, so a
+ * slip of the mouse can't throw away work; finished tasks under it are kept and
+ * simply join the section above.
+ */
+export function deleteSection(text, name) {
+  const doc = parse(text)
+  const index = doc.sections.findIndex((s) => sectionKey(s.name) === sectionKey(name))
+  if (index === -1) throw new TaskNotFoundError(`There's no section called "${name}".`)
+  const section = doc.sections[index]
+  const open = doc.tasks.filter((t) => t.section === section.name && !t.done && !t.cancelled
+    && t.line > section.line && (index + 1 >= doc.sections.length || t.line < doc.sections[index + 1].line))
+  if (open.length) {
+    throw new Error(`"${section.name}" still has ${open.length} task${open.length > 1 ? 's' : ''}. `
+      + 'Move or finish them first (double-click a task and add #section to move it).')
+  }
+  // Take a blank line with it, so deleting doesn't leave a growing gap.
+  const blankBefore = section.line > 0 && doc.lines[section.line - 1].trim() === ''
+  const blankAfter = doc.lines[section.line + 1]?.trim() === ''
+  doc.lines.splice(blankBefore ? section.line - 1 : section.line, blankBefore || blankAfter ? 2 : 1)
+  return join(doc)
+}

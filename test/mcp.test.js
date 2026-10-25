@@ -41,7 +41,7 @@ describe('MCP server over stdio', () => {
   it('advertises the tools with input schemas', async () => {
     const { tools } = await client.listTools()
     assert.deepEqual(tools.map((t) => t.name).sort(), [
-      'add_task', 'complete_task', 'delete_task', 'find_free_time', 'list_calendar',
+      'add_task', 'complete_task', 'delete_section', 'delete_task', 'find_free_time', 'list_calendar',
       'list_tasks', 'plan_task', 'refresh_calendars', 'update_task',
     ])
     const add = tools.find((t) => t.name === 'add_task')
