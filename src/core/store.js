@@ -9,7 +9,7 @@
  */
 
 import { mkdir, readFile, writeFile, rename, appendFile, readdir, unlink, open, stat, copyFile } from 'node:fs/promises'
-import { watch } from 'node:fs'
+import { mkdirSync, watch } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
 import { createHash } from 'node:crypto'
 import { paths as configPaths } from './config.js'
@@ -159,6 +159,8 @@ export class Store {
       if (external && !(await this.#loggedRecently())) await this.log('file', 'edited outside Orb').catch(() => {})
       onChange(text, { external })
     }
+    // On first launch the folder doesn't exist yet, and watching a missing folder throws.
+    mkdirSync(this.paths.dir, { recursive: true })
     const watcher = watch(this.paths.dir, (event, file) => {
       if (file && file !== basename(this.paths.todo)) return
       clearTimeout(timer)

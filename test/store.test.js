@@ -56,6 +56,15 @@ describe('store', () => {
     assert.match(await readFile(join(dir, 'activity.log'), 'utf8'), /\tfile\tedited outside Orb/)
   })
 
+  it('can start watching on first launch, before the folder exists', async () => {
+    const parent = await mkdtemp(join(tmpdir(), 'orb-first-'))
+    const store = new Store(pathsFor({ ...DEFAULTS, dataDir: join(parent, 'Documents', 'Orb') }))
+    const stop = store.watch(() => {})
+    stop()
+    await store.ensure()
+    assert.match(await readFile(join(parent, 'Documents', 'Orb', 'todo.md'), 'utf8'), /## work/)
+  })
+
   it('an ambiguous reference changes nothing', async () => {
     const { dir, service } = await fresh()
     await service.add('panel', { title: 'book flight' })
