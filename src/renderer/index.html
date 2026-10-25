@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:">
+    <title>Orb</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="app.js" defer></script>
+  </head>
+  <body class="expand-left expand-up">
+    <button id="ball" type="button" aria-expanded="false" aria-controls="panel" aria-label="Orb">
+      <span id="ball-count" aria-hidden="true"></span>
+    </button>
+    <button id="dock-tab" type="button" aria-label="Show Orb" hidden></button>
+
+    <section id="panel" aria-label="Orb to-do list" hidden>
+      <header id="head">
+        <h1 id="date"><span id="date-weekday"></span><span id="date-day"></span></h1>
+        <button id="settings-button" class="icon" type="button" aria-label="Settings" aria-pressed="false">
+          <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path fill="currentColor" d="M11.1 1.5l.4 2.1c.5.2 1 .5 1.4.8l2-.7 1.1 1.9-1.6 1.4c.1.5.1 1.1 0 1.6l1.6 1.4-1.1 1.9-2-.7c-.4.3-.9.6-1.4.8l-.4 2.1H8.9l-.4-2.1c-.5-.2-1-.5-1.4-.8l-2 .7-1.1-1.9 1.6-1.4a4.6 4.6 0 0 1 0-1.6L4 5.6l1.1-1.9 2 .7c.4-.3.9-.6 1.4-.8l.4-2.1h2.2zM10 7a2 2 0 1 0 0 4 2 2 0 0 0 0-4z" transform="translate(0 1)"/></svg>
+        </button>
+      </header>
+
+      <div id="tabs" role="tablist" aria-label="Views">
+        <button role="tab" type="button" id="tab-todo" data-view="todo" aria-controls="view-todo" aria-selected="true">To-do</button>
+        <button role="tab" type="button" id="tab-calendar" data-view="calendar" aria-controls="view-calendar" aria-selected="false" tabindex="-1">Calendar</button>
+        <button role="tab" type="button" id="tab-done" data-view="done" aria-controls="view-done" aria-selected="false" tabindex="-1">Done</button>
+      </div>
+
+      <div id="views">
+        <div id="view-todo" class="view" role="tabpanel" aria-labelledby="tab-todo"></div>
+
+        <div id="view-calendar" class="view" role="tabpanel" aria-labelledby="tab-calendar" hidden>
+          <div class="month-head">
+            <button id="prev-month" class="icon" type="button" aria-label="Previous month">‹</button>
+            <h2 id="month-label" aria-live="polite"></h2>
+            <button id="next-month" class="icon" type="button" aria-label="Next month">›</button>
+            <button id="today-button" class="link" type="button">Today</button>
+          </div>
+          <div id="month-grid" role="grid" aria-labelledby="month-label"></div>
+          <h3 id="agenda-label"></h3>
+          <ul id="agenda"></ul>
+        </div>
+
+        <div id="view-done" class="view" role="tabpanel" aria-labelledby="tab-done" hidden></div>
+
+        <div id="view-settings" class="view" hidden>
+          <h2 class="settings-title"><button id="settings-back" class="icon" type="button" aria-label="Back">‹</button> Settings</h2>
+
+          <section class="setting">
+            <h3>Claude</h3>
+            <p id="claude-status" class="muted"></p>
+            <button id="connect-claude" type="button" class="primary">Connect to Claude Desktop</button>
+            <p class="muted small">Claude Code: run this once in a terminal</p>
+            <div class="copy-row"><code id="claude-code-command"></code><button type="button" class="link" data-copy="claude-code-command">Copy</button></div>
+          </section>
+
+          <section class="setting">
+            <h3>Your calendars</h3>
+            <ul id="feed-list"></ul>
+            <form id="feed-form">
+              <label class="sr-only" for="feed-name">Calendar name</label>
+              <input id="feed-name" type="text" placeholder="Name (e.g. School)" maxlength="60">
+              <label class="sr-only" for="feed-url">Calendar link</label>
+              <input id="feed-url" type="url" placeholder="https://… or webcal://… (.ics link)" required>
+              <button type="submit" class="primary">Add calendar</button>
+            </form>
+            <details>
+              <summary>Where do I find my calendar's link?</summary>
+              <ul class="help">
+                <li><b>Google Calendar</b> (on a computer): Settings → pick the calendar → <i>Integrate calendar</i> → <i>Secret address in iCal format</i>.</li>
+                <li><b>iCloud</b>: Calendar app → right-click the calendar → <i>Share Calendar…</i> → <i>Public Calendar</i> → copy the link.</li>
+                <li><b>Canvas</b>: Calendar → <i>Calendar Feed</i> (bottom right).</li>
+                <li><b>Schoology</b>: Calendar → <i>Export</i> → <i>Subscribe</i>.</li>
+                <li><b>Outlook</b>: Settings → Calendar → <i>Shared calendars</i> → <i>Publish a calendar</i> → ICS link.</li>
+              </ul>
+              <p class="muted small">Secret links work like passwords. Orb only keeps them on this computer.</p>
+            </details>
+          </section>
+
+          <section class="setting">
+            <h3>See Orb's tasks in your calendar app</h3>
+            <div class="copy-row"><code id="ics-url"></code><button type="button" class="link" data-copy="ics-url">Copy</button></div>
+            <p class="muted small">Apple Calendar: File → New Calendar Subscription → paste. Due dates and planned blocks appear and stay in sync while Orb runs.</p>
+          </section>
+
+          <section class="setting">
+            <h3>Files</h3>
+            <p class="muted small break" id="data-dir"></p>
+            <div class="row">
+              <button id="open-file" type="button">Open to-do file</button>
+              <button id="open-folder" type="button">Open folder</button>
+            </div>
+          </section>
+
+          <section class="setting">
+            <h3>General</h3>
+            <label class="check"><input id="open-at-login" type="checkbox"> Start Orb when I log in</label>
+            <p class="muted small">Shortcut to open Orb and type a task: <kbd id="hotkey"></kbd></p>
+          </section>
+        </div>
+      </div>
+
+      <p id="status" role="status" aria-live="polite" hidden></p>
+
+      <form id="composer" autocomplete="off">
+        <label for="quick-add" class="sr-only">Add a task</label>
+        <input id="quick-add" type="text" maxlength="300" placeholder="Add a task… e.g. essay fri 5pm #study" aria-describedby="preview">
+        <div id="preview"></div>
+      </form>
+    </section>
+  </body>
+</html>

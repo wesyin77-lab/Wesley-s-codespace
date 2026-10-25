@@ -1,0 +1,79 @@
+{
+  "name": "orb",
+  "productName": "Orb",
+  "version": "0.1.0",
+  "description": "A floating to-do ball with a calendar, backed by a plain Markdown file that your AI can edit.",
+  "type": "module",
+  "main": "src/main/main.js",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test \"test/*.test.js\"",
+    "e2e": "playwright test",
+    "mcp": "node src/mcp/server.js",
+    "dist": "electron-builder --publish never"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "chrono-node": "^2.10.3",
+    "ical.js": "^2.2.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.1",
+    "axe-core": "^4.14.0",
+    "electron": "^44.9.3",
+    "electron-builder": "^26.18.0",
+    "fast-check": "^4.10.2"
+  },
+  "build": {
+    "appId": "world.orb.todo",
+    "productName": "Orb",
+    "asar": false,
+    "files": [
+      "src/**",
+      "package.json",
+      "!**/*.map"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "category": "public.app-category.productivity",
+      "identity": "-",
+      "extendInfo": {
+        "LSUIElement": true
+      }
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Utility"
+    }
+  }
+}

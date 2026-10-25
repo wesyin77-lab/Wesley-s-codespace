@@ -1,0 +1,320 @@
+/*
+ * Ball, dock tab and panel placement follow dsh-orb-cordis (MIT),
+ * packages/helper/assets/floating.css: the window is either the ball (with 12px
+ * of transparent chrome) or the panel, and the ball stays in the panel's corner
+ * nearest its resting place.
+ *
+ * Colours are chosen for WCAG 2.2 AA: body text ≥ 4.5:1 on the panel in both themes.
+ */
+
+:root {
+  color-scheme: light dark;
+  --ball: 72px;
+  --chrome: 12px;
+  --radius: 22px;
+  --row: var(--ball);
+
+  --bg: #fbfbfa;
+  --fg: #1d1d1f;
+  --muted: #5f5f67;
+  --line: #e3e3e6;
+  --hover: #f0f0f2;
+  --accent: #2563d6;
+  --accent-fg: #ffffff;
+  --danger: #b42318;
+  --warn: #8a5300;
+  --plan: #5b3fd0;
+  --ball-bg: #1d1d1f;
+  --ball-fg: #ffffff;
+  --ring-overdue: #e5484d;
+  --ring-today: #f5a524;
+  --shadow: 0 6px 24px rgba(0, 0, 0, 0.18), 0 1px 3px rgba(0, 0, 0, 0.12);
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --dim: 0.35;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1c1e;
+    --fg: #f2f2f7;
+    --muted: #a7a7b0;
+    --line: #34343a;
+    --hover: #2a2a2e;
+    --accent: #7aa7ff;
+    --accent-fg: #0b1730;
+    --danger: #ff8a80;
+    --warn: #f5b84d;
+    --plan: #b6a4ff;
+    --ball-bg: #2c2c30;
+    --ball-fg: #ffffff;
+    --shadow: 0 6px 24px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  }
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+  font: 13px/1.4 var(--sans);
+  color: var(--fg);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+button, input, select { font: inherit; color: inherit; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---- ball ---------------------------------------------------------------- */
+
+#ball {
+  position: absolute;
+  z-index: 2;
+  top: var(--chrome);
+  left: var(--chrome);
+  width: var(--ball);
+  height: var(--ball);
+  border: 0;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--ball-bg);
+  color: var(--ball-fg);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.32), inset 0 0 0 4px transparent;
+  cursor: grab;
+  display: grid;
+  place-items: center;
+  transition: box-shadow 200ms ease;
+}
+#ball:active { cursor: grabbing; }
+#ball.overdue { box-shadow: 0 3px 8px rgba(0, 0, 0, 0.32), inset 0 0 0 4px var(--ring-overdue); }
+#ball.today { box-shadow: 0 3px 8px rgba(0, 0, 0, 0.32), inset 0 0 0 4px var(--ring-today); }
+#ball-count { font: 600 22px/1 var(--sans); font-variant-numeric: tabular-nums; }
+#ball-count.quiet { font-size: 15px; opacity: 0.75; }
+
+body.expand-left #ball { left: auto; right: var(--chrome); }
+body.expand-up #ball { top: auto; bottom: var(--chrome); }
+body.pinned #ball { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* ---- dock tab (ball parked at a screen edge) -------------------------------- */
+
+#dock-tab {
+  position: absolute;
+  top: 8px;
+  display: none;
+  width: 6px;
+  height: 72px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0;
+  background: #75757f;
+  box-shadow: 0 0 0 6px rgb(117 117 127 / 7%), 0 0 0 4px rgb(117 117 127 / 12.5%), 0 0 0 2px rgb(117 117 127 / 19.6%);
+  cursor: pointer;
+  animation: dock-tab-breath 1800ms ease-in-out infinite alternate;
+}
+#dock-tab.alert { background: var(--ring-overdue); }
+@keyframes dock-tab-breath { from { opacity: 0.5; } to { opacity: 1; } }
+body.docked-left #dock-tab { left: 0; }
+body.docked-right #dock-tab { right: 0; }
+body.docked #dock-tab { display: block; }
+body.docked #ball, body.docked #panel { visibility: hidden; pointer-events: none; }
+
+/* ---- panel --------------------------------------------------------------- */
+
+#panel {
+  position: absolute;
+  inset: var(--chrome);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  opacity: 0;
+  transform-origin: var(--origin-x) var(--origin-y);
+  transform: scale(0.2);
+  pointer-events: none;
+  transition: opacity 300ms ease-in-out, transform 300ms ease-in-out;
+  overflow: hidden;
+}
+body.expand-left { --origin-x: 100%; }
+body.expand-right { --origin-x: 0%; }
+body.expand-up { --origin-y: 100%; }
+body.expand-down { --origin-y: 0%; }
+body.expanded #panel { opacity: 1; transform: scale(1); pointer-events: auto; }
+/* "It fades so it doesn't cover my work": a pinned panel dims while the pointer is
+ * elsewhere and is fully opaque again the moment you come back to it. */
+body.expanded.pinned.away #panel { opacity: var(--dim); }
+
+@media (prefers-reduced-motion: reduce) {
+  #panel, #ball { transition: none; }
+  #dock-tab { animation: none; opacity: 1; }
+}
+
+/* The composer row sits beside the ball, at the panel edge the ball is on. */
+#composer { order: 10; flex: 0 0 var(--row); padding: 12px 16px 8px; border-top: 1px solid var(--line); }
+body.expand-down #composer { order: -1; border-top: 0; border-bottom: 1px solid var(--line); }
+body.expand-left #composer { padding-right: calc(var(--ball) + 8px); }
+body.expand-right #composer { padding-left: calc(var(--ball) + 8px); }
+/* The header shares the ball's row when the panel grows downward; leave it room. */
+body.expand-down #head { padding-top: 10px; }
+
+#quick-add {
+  width: 100%;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--hover);
+  user-select: text;
+  -webkit-user-select: text;
+}
+#quick-add::placeholder { color: var(--muted); opacity: 1; }
+#preview { margin-top: 4px; min-height: 16px; font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#preview b { color: var(--fg); font-weight: 600; }
+
+#head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 4px; }
+#date { margin: 0; font: 600 15px/1.2 var(--sans); }
+#date-weekday { margin-right: 6px; }
+#date-day { color: var(--muted); font-weight: 500; }
+
+#tabs { display: flex; gap: 4px; padding: 4px 12px 8px; border-bottom: 1px solid var(--line); }
+#tabs [role="tab"] {
+  border: 0; background: none; padding: 5px 10px; border-radius: 8px; color: var(--muted); cursor: pointer; font-weight: 500;
+}
+#tabs [role="tab"]:hover { background: var(--hover); }
+#tabs [role="tab"][aria-selected="true"] { color: var(--fg); background: var(--hover); font-weight: 600; }
+body.settings #tabs { display: none; }
+
+#views { flex: 1 1 auto; overflow: hidden; position: relative; }
+.view { position: absolute; inset: 0; overflow-y: auto; padding: 8px 12px 12px; scrollbar-width: thin; }
+
+#status { order: 9; margin: 0; padding: 6px 16px; font-size: 12px; background: var(--hover); }
+#status.error { color: var(--danger); }
+
+button.icon {
+  border: 0; background: none; width: 28px; height: 28px; border-radius: 8px; display: inline-grid; place-items: center;
+  color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1; flex: none;
+}
+button.icon:hover { background: var(--hover); color: var(--fg); }
+button.icon svg { width: 18px; height: 18px; }
+button.link { border: 0; background: none; color: var(--accent); cursor: pointer; padding: 4px 6px; border-radius: 6px; }
+button.link:hover { background: var(--hover); }
+button.primary, .setting button:not(.link):not(.icon) {
+  border: 1px solid var(--line); background: var(--hover); border-radius: 8px; padding: 6px 10px; cursor: pointer;
+}
+button.primary { background: var(--accent); color: var(--accent-fg); border-color: transparent; font-weight: 600; }
+
+/* ---- tasks --------------------------------------------------------------- */
+
+.section { margin: 6px 0 10px; }
+.section h2 {
+  margin: 0 0 2px; padding: 0 4px; font: 600 12px/1.6 var(--mono); color: var(--muted); text-transform: lowercase;
+}
+.section h2::before { content: "• "; }
+.tasks { list-style: none; margin: 0; padding: 0; }
+
+.task {
+  display: grid;
+  grid-template-columns: 20px 1fr auto;
+  align-items: start;
+  gap: 2px 8px;
+  padding: 5px 4px;
+  border-radius: 8px;
+}
+.task:hover, .task:focus-within { background: var(--hover); }
+.task input[type="checkbox"] { margin: 2px 0 0; width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+.task .title { font: 13px/1.45 var(--mono); overflow-wrap: anywhere; cursor: text; border-radius: 4px; }
+.task.done .title { color: var(--muted); text-decoration: line-through; }
+.task .meta { grid-column: 2; display: flex; flex-wrap: wrap; gap: 4px 8px; font-size: 11.5px; color: var(--muted); }
+.task .meta:empty { display: none; }
+.chip.overdue { color: var(--danger); font-weight: 600; }
+.chip.today { color: var(--warn); font-weight: 600; }
+.chip.plan { color: var(--plan); }
+.task .actions { grid-column: 3; grid-row: 1; display: flex; gap: 0; opacity: 0; }
+.task:hover .actions, .task:focus-within .actions { opacity: 1; }
+.task .actions button.icon { width: 24px; height: 22px; font-size: 13px; }
+.task .edit { grid-column: 2 / 4; width: 100%; font: 13px/1.4 var(--mono); padding: 2px 6px; border: 1px solid var(--accent); border-radius: 6px; background: var(--bg); user-select: text; -webkit-user-select: text; }
+
+.plan-form { grid-column: 2 / 4; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 4px; font-size: 12px; }
+.plan-form input, .plan-form select { padding: 3px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); }
+.plan-form button { border: 1px solid var(--line); background: var(--bg); border-radius: 6px; padding: 3px 8px; cursor: pointer; }
+.plan-form button.primary { background: var(--accent); color: var(--accent-fg); border-color: transparent; }
+
+.empty { color: var(--muted); padding: 16px 8px; text-align: center; }
+.empty b { color: var(--fg); }
+
+/* ---- calendar -------------------------------------------------------------- */
+
+.month-head { display: flex; align-items: center; gap: 2px; margin: 2px 0 6px; }
+#month-label { flex: 1; margin: 0; text-align: center; font: 600 13px/1.2 var(--sans); }
+#month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+#month-grid .dow { text-align: center; font-size: 10.5px; color: var(--muted); padding: 2px 0; font-weight: 600; }
+#month-grid .day {
+  position: relative; height: 34px; border: 0; border-radius: 8px; background: none; cursor: pointer;
+  font-size: 12px; font-variant-numeric: tabular-nums; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 4px;
+}
+#month-grid .day:hover { background: var(--hover); }
+#month-grid .day.other { color: var(--muted); opacity: 0.6; }
+#month-grid .day.today span.n { background: var(--fg); color: var(--bg); border-radius: 999px; padding: 0 5px; font-weight: 700; }
+#month-grid .day[aria-selected="true"] { background: var(--hover); box-shadow: inset 0 0 0 1.5px var(--accent); }
+#month-grid .dots { display: flex; gap: 2px; margin-top: 3px; height: 5px; }
+#month-grid .dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--muted); }
+#month-grid .dots i.task { background: var(--accent); }
+#month-grid .dots i.overdue { background: var(--danger); }
+
+#agenda-label { margin: 12px 4px 4px; font: 600 12px/1.4 var(--sans); color: var(--muted); }
+#agenda { list-style: none; margin: 0; padding: 0; }
+#agenda li { display: grid; grid-template-columns: 62px 4px 1fr; gap: 8px; align-items: start; padding: 5px 4px; border-radius: 8px; }
+#agenda li:hover { background: var(--hover); }
+#agenda .time { font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; padding-top: 1px; }
+#agenda .bar { align-self: stretch; border-radius: 2px; background: var(--muted); min-height: 16px; }
+#agenda .bar.plan { background: var(--plan); }
+#agenda .bar.due { background: var(--accent); }
+#agenda .what { overflow-wrap: anywhere; }
+#agenda .what small { display: block; color: var(--muted); font-size: 11px; }
+#agenda .what label { display: flex; gap: 6px; align-items: start; font-family: var(--mono); cursor: pointer; }
+#agenda .what input { margin: 2px 0 0; accent-color: var(--accent); }
+#agenda .done label { text-decoration: line-through; color: var(--muted); }
+
+/* ---- done ---------------------------------------------------------------- */
+
+.done-summary { margin: 4px 4px 10px; color: var(--muted); font-size: 12px; }
+
+/* ---- settings -------------------------------------------------------------- */
+
+.settings-title { display: flex; align-items: center; gap: 4px; margin: 0 0 6px; font: 600 15px/1.2 var(--sans); }
+.setting { padding: 8px 4px 12px; border-bottom: 1px solid var(--line); }
+.setting:last-child { border-bottom: 0; }
+.setting h3 { margin: 0 0 6px; font: 600 12.5px/1.3 var(--sans); }
+.setting p { margin: 6px 0; }
+.muted { color: var(--muted); }
+.small { font-size: 11.5px; }
+.break { overflow-wrap: anywhere; user-select: text; -webkit-user-select: text; }
+.row { display: flex; gap: 6px; flex-wrap: wrap; }
+.copy-row { display: flex; align-items: center; gap: 4px; }
+.copy-row code {
+  flex: 1; min-width: 0; font: 11px/1.4 var(--mono); background: var(--hover); padding: 5px 7px; border-radius: 6px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; user-select: text; -webkit-user-select: text;
+}
+#feed-form { display: grid; gap: 6px; margin: 6px 0; }
+#feed-form input { padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); user-select: text; -webkit-user-select: text; }
+#feed-list { list-style: none; margin: 0; padding: 0; }
+#feed-list li { display: flex; align-items: center; gap: 6px; padding: 4px 0; }
+#feed-list .swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+#feed-list .name { flex: 1; min-width: 0; }
+#feed-list .name small { display: block; color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#feed-list .name small.error { color: var(--danger); white-space: normal; }
+details summary { cursor: pointer; color: var(--accent); font-size: 12px; }
+.help { padding-left: 18px; margin: 6px 0; font-size: 12px; }
+.help li { margin: 4px 0; }
+.check { display: flex; gap: 6px; align-items: center; cursor: pointer; }
+kbd { font: 11px var(--mono); border: 1px solid var(--line); border-radius: 4px; padding: 1px 4px; background: var(--hover); }
