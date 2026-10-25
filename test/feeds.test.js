@@ -36,6 +36,8 @@ describe('Outlook school calendars', () => {
 
   it('explains, instead of failing silently, when the Outlook website address is pasted', () => {
     assert.throws(() => normalizeFeedUrl('https://outlook.office.com/calendar/view/month'), (e) => e.message === OUTLOOK_HELP)
+    // The newer Outlook address, as in a real school account's browser bar.
+    assert.throws(() => normalizeFeedUrl('https://outlook.cloud.microsoft/calendar/view/workweek'), (e) => e.message === OUTLOOK_HELP)
   })
 
   it('adds and shows a working Outlook feed end to end', async () => {

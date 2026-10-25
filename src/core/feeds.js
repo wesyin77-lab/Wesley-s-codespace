@@ -10,7 +10,8 @@ import { parseIcs } from './calendar.js'
 
 const PALETTE = ['#3573d0', '#0f9b8e', '#d9730d', '#7a5af5', '#c2417a', '#5b8a1e']
 
-const OUTLOOK_HOSTS = /(^|\.)(outlook\.office365\.com|outlook\.office\.com|outlook\.live\.com)$/i
+// Includes outlook.cloud.microsoft, the newer address school accounts are moving to.
+const OUTLOOK_HOSTS = /(^|\.)(outlook\.office365\.com|outlook\.office\.com|outlook\.live\.com|outlook\.cloud\.microsoft)$/i
 
 export function normalizeFeedUrl(url) {
   // People paste links wrapped in quotes or <angle brackets>, or with stray spaces.
