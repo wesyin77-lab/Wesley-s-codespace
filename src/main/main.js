@@ -14,7 +14,7 @@ import { join } from 'node:path'
 import {
   BALL_WINDOW_SIZE, CHROME_INSET, FloatingPlacement, PANEL_WINDOW_SIZE, clampedBallOrigin, initialWindowBounds,
 } from './geometry.js'
-import { pinToDesktop, widgetBounds } from './widget.js'
+import { WIDGET_PRESETS, pinToDesktop, resizedBounds, widgetBounds } from './widget.js'
 import { claudeCodeCommand, claudeDesktopStatus, connectClaudeDesktop, serverEntry } from './claude-setup.js'
 import { loadConfig, saveConfig } from '../core/config.js'
 import { Service } from '../core/service.js'
@@ -55,7 +55,7 @@ function initialBounds() {
   const work = screen.getPrimaryDisplay().workArea
   if (MODE === 'widget') {
     const areas = [work, ...screen.getAllDisplays().map((d) => d.workArea)]
-    return widgetBounds(E2E ? undefined : config.widget, PANEL_WINDOW_SIZE, areas)
+    return widgetBounds(E2E ? undefined : config.widget, widgetWindowSize(config), areas)
   }
   const saved = config.ball
   return saved && !E2E
@@ -141,6 +141,20 @@ function openWindow() {
 
 let raised = false
 
+/** Saved card size (or the default), as a window size including the transparent chrome. */
+function widgetWindowSize(config = loadConfig()) {
+  const card = config.widgetSize ?? { width: PANEL_WINDOW_SIZE.width - 2 * CHROME_INSET, height: PANEL_WINDOW_SIZE.height - 2 * CHROME_INSET }
+  return { width: card.width + 2 * CHROME_INSET, height: card.height + 2 * CHROME_INSET }
+}
+
+function setWidgetCardSize(card) {
+  const { x, y } = win.getBounds()
+  const area = screen.getDisplayNearestPoint({ x, y }).workArea
+  const next = widgetBounds({ x, y }, { width: card.width + 2 * CHROME_INSET, height: card.height + 2 * CHROME_INSET }, [area])
+  win.setBounds(next)
+  saveConfig({ widgetSize: card, widget: { x: next.x, y: next.y } })
+}
+
 function sendToDesktop(target) {
   try {
     const level = pinToDesktop(target)
@@ -178,6 +192,13 @@ function showMenu() {
     { label: 'Refresh calendars', click: () => void refreshCalendars() },
     { type: 'separator' },
     { label: 'Start Orb at login', type: 'checkbox', checked: login.openAtLogin, click: (item) => app.setLoginItemSettings({ openAtLogin: item.checked }) },
+    ...MODE === 'widget' ? [{
+      label: 'Widget size',
+      submenu: WIDGET_PRESETS.map((preset) => ({
+        label: `${preset.label} (${preset.width}×${preset.height})`,
+        click: () => setWidgetCardSize(preset),
+      })),
+    }] : [],
     {
       label: MODE === 'widget' ? 'Switch to floating ball' : 'Switch to desktop widget',
       click: () => {
@@ -378,6 +399,26 @@ handle('orb:drag-end', async (canDock) => {
 })
 handle('orb:unsnap', () => placement?.unsnap())
 
+// Widget resize corner: like dragging the ball, the page only signals and the
+// size comes from the OS cursor, so the window moving under it can't feed back.
+let resizeStart
+ipcMain.on('orb:resize-begin', (event) => {
+  if (!fromBall(event) || MODE !== 'widget') return
+  resizeStart = { bounds: win.getBounds(), cursor: screen.getCursorScreenPoint() }
+})
+ipcMain.on('orb:resize-move', (event) => {
+  if (!fromBall(event) || !resizeStart) return
+  const cursor = screen.getCursorScreenPoint()
+  const area = screen.getDisplayNearestPoint(resizeStart.bounds).workArea
+  win.setBounds(resizedBounds(resizeStart.bounds, { x: cursor.x - resizeStart.cursor.x, y: cursor.y - resizeStart.cursor.y }, CHROME_INSET, area))
+})
+ipcMain.on('orb:resize-end', (event) => {
+  if (!fromBall(event) || !resizeStart) return
+  resizeStart = undefined
+  const { width, height } = win.getBounds()
+  saveConfig({ widgetSize: { width: width - 2 * CHROME_INSET, height: height - 2 * CHROME_INSET } })
+})
+
 // ---- lifecycle ----------------------------------------------------------------
 
 app.on('second-instance', () => send('orb:summon'))
@@ -404,7 +445,8 @@ export const ready = app.whenReady().then(async () => {
     // A monitor unplugged with the widget on it: bring it back onto a screen.
     screen.on('display-removed', () => {
       const areas = [screen.getPrimaryDisplay().workArea, ...screen.getAllDisplays().map((d) => d.workArea)]
-      win.setBounds(widgetBounds(win.getBounds(), PANEL_WINDOW_SIZE, areas))
+      const { width, height } = win.getBounds()
+      win.setBounds(widgetBounds(win.getBounds(), { width, height }, areas))
     })
   }
 

@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { widgetBounds } from '../src/main/widget.js'
+import { resizedBounds, widgetBounds, WIDGET_MIN } from '../src/main/widget.js'
 
 const size = { width: 364, height: 484 }
 // A MacBook screen below a 25px menu bar, plus an external monitor to its right.
@@ -23,5 +23,24 @@ describe('where the desktop widget goes', () => {
 
   it('comes back to the main screen when its monitor is unplugged', () => {
     assert.deepEqual(widgetBounds({ x: 2000, y: 100 }, size, [laptop]), { x: 1512 - 364 - 24, y: 49, ...size })
+  })
+})
+
+describe('resizing the widget', () => {
+  const start = { x: 200, y: 500, width: 364, height: 484 }
+  const screen = { x: 0, y: 25, width: 1512, height: 932 }
+
+  it('follows the cursor from the bottom-right corner, top-left fixed', () => {
+    assert.deepEqual(resizedBounds(start, { x: 40, y: -100 }, 12, screen), { x: 200, y: 500, width: 404, height: 384 })
+  })
+
+  it('never gets too small to use', () => {
+    const tiny = resizedBounds(start, { x: -1000, y: -1000 }, 12, screen)
+    assert.deepEqual([tiny.width, tiny.height], [WIDGET_MIN.width + 24, WIDGET_MIN.height + 24])
+  })
+
+  it('stops at the bottom of the screen (the Dock area)', () => {
+    const big = resizedBounds(start, { x: 0, y: 2000 }, 12, screen)
+    assert.equal(big.y + big.height, 25 + 932 + 12)
   })
 })

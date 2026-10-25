@@ -326,3 +326,29 @@ body.widget #composer { flex-basis: auto; padding: 10px 14px 8px; }
 /* The date header is the handle for moving the widget around the desktop. */
 body.widget #head { -webkit-app-region: drag; cursor: grab; }
 body.widget #head button { -webkit-app-region: no-drag; }
+
+/* Resize corner, bottom-right of the card. */
+#resize-grip { display: none; }
+body.widget #resize-grip {
+  display: block;
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+  background: linear-gradient(135deg, transparent 0 55%, var(--muted) 55% 62%, transparent 62% 72%, var(--muted) 72% 79%, transparent 79%);
+  opacity: 0.5;
+  z-index: 3;
+}
+body.widget #resize-grip:hover { opacity: 1; }
+
+/* Small widget sizes: tighter spacing so the list keeps the room. */
+@media (max-height: 420px) {
+  #head { padding: 10px 14px 2px; }
+  #date { font-size: 14px; }
+  #tabs { padding: 2px 10px 6px; }
+  #tabs [role="tab"] { padding: 3px 8px; }
+  body.widget #composer { padding: 8px 12px 6px; }
+  .view { padding: 6px 10px 10px; }
+}

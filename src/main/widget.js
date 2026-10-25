@@ -78,3 +78,29 @@ export function pinToDesktop(win) {
   n.sendULong(nsWindow, n.sel.setCollectionBehavior, DESKTOP_BEHAVIOR)
   return n.getLong(nsWindow, n.sel.level)
 }
+
+// Sizes are for the visible card; the window adds the transparent chrome around it.
+export const WIDGET_PRESETS = [
+  { id: 'large', label: 'Same as a large Mac widget', width: 344, height: 344 },
+  { id: 'wide', label: 'Wide', width: 500, height: 344 },
+  { id: 'default', label: 'Default', width: 340, height: 460 },
+  { id: 'tall', label: 'Tall', width: 344, height: 600 },
+]
+export const WIDGET_MIN = { width: 260, height: 280 }
+export const WIDGET_MAX = { width: 900, height: 1200 }
+
+/**
+ * Window bounds while dragging the resize corner: the top-left stays put, the size
+ * follows the cursor, clamped to sensible limits and to the screen.
+ */
+export function resizedBounds(start, delta, chrome, workArea) {
+  const clamp = (value, min, max) => Math.min(Math.max(value, min), Math.max(min, max))
+  return {
+    x: start.x,
+    y: start.y,
+    width: Math.round(clamp(start.width + delta.x, WIDGET_MIN.width + 2 * chrome,
+      Math.min(WIDGET_MAX.width + 2 * chrome, workArea.x + workArea.width - start.x + chrome))),
+    height: Math.round(clamp(start.height + delta.y, WIDGET_MIN.height + 2 * chrome,
+      Math.min(WIDGET_MAX.height + 2 * chrome, workArea.y + workArea.height - start.y + chrome))),
+  }
+}

@@ -38,6 +38,9 @@ contextBridge.exposeInMainWorld('orb', {
   dragMove: (canDock) => ipcRenderer.send('orb:drag-move', canDock !== false),
   dragEnd: invoke('orb:drag-end'),
   unsnap: invoke('orb:unsnap'),
+  resizeBegin: () => ipcRenderer.send('orb:resize-begin'),
+  resizeMove: () => ipcRenderer.send('orb:resize-move'),
+  resizeEnd: () => ipcRenderer.send('orb:resize-end'),
 
   onState: listen('orb:state'),
   onCalendarChanged: listen('orb:calendar-changed'),

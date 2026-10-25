@@ -826,6 +826,24 @@
     expanded = true
     requestAnimationFrame(() => document.body.classList.add('expanded'))
     $('#head').title = 'Drag here to move'
+
+    const grip = $('#resize-grip')
+    let resizing = false
+    grip.addEventListener('pointerdown', (event) => {
+      if (event.button !== 0) return
+      resizing = true
+      grip.setPointerCapture(event.pointerId)
+      api.resizeBegin()
+    })
+    grip.addEventListener('pointermove', () => { if (resizing) api.resizeMove() })
+    const stop = () => {
+      if (!resizing) return
+      resizing = false
+      api.resizeEnd()
+    }
+    grip.addEventListener('pointerup', stop)
+    grip.addEventListener('pointercancel', stop)
+    grip.addEventListener('lostpointercapture', stop)
   }
 
   // ---- data -----------------------------------------------------------------------
