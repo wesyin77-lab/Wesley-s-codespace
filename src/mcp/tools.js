@@ -131,16 +131,6 @@ export function createServer(service = new Service()) {
     return ok(`Deleted "${result.task.title}". (Backups are kept in the Orb folder.)`)
   }))
 
-  server.registerTool('delete_section', {
-    title: 'Delete a section',
-    description: 'Delete a section heading (e.g. one created by a typo). Only works once it has no open tasks; move them first with update_task.',
-    inputSchema: { section: z.string().min(1).max(60) },
-    annotations: { destructiveHint: true },
-  }, guard(async ({ section }) => {
-    await service.removeSection(SOURCE, section)
-    return ok(`Deleted the section "${section}".`)
-  }))
-
   server.registerTool('list_calendar', {
     title: 'Show calendar',
     description: 'The user\'s calendar between two dates: events from their subscribed calendars, time blocks planned for tasks, and tasks due.',

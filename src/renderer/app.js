@@ -563,16 +563,7 @@
     const blocks = names.map((name) => {
       const tasks = open.filter((t) => t.section === name)
       return el('section', { class: 'section', 'aria-label': name || 'Inbox' },
-        el('h2', {},
-          el('span', { text: name || 'inbox' }),
-          name ? el('button', {
-            class: 'icon section-delete',
-            type: 'button',
-            'aria-label': `Delete section ${name}`,
-            title: tasks.length ? 'Move or finish its tasks first' : 'Delete this section',
-            text: '✕',
-            onclick: () => attempt(() => api.removeSection(name)),
-          }) : null),
+        el('h2', { text: name || 'inbox' }),
         el('ul', { class: 'tasks' }, tasks.map(taskRow)))
     })
     const scroll = root.scrollTop

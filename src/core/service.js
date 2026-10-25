@@ -7,7 +7,7 @@
 import { writeFile, rename } from 'node:fs/promises'
 import { loadConfig, paths as configPaths } from './config.js'
 import { Store } from './store.js'
-import { addTask, updateTask, deleteTask, deleteSection, findById, findByText, parse } from './format.js'
+import { addTask, updateTask, deleteTask, findById, findByText, parse } from './format.js'
 import { quickAdd } from './quickadd.js'
 import { agenda, buildIcs, findFreeTime } from './calendar.js'
 import { loadFeedEvents } from './feeds.js'
@@ -99,10 +99,6 @@ export class Service {
       return { text: deleteTask(text, found), summary: `delete "${found.title}"` }
     })
     return { ...result, task: found }
-  }
-
-  removeSection(source, name) {
-    return this.store.mutate(source, (text) => ({ text: deleteSection(text, name), summary: `delete section "${name}"` }))
   }
 
   plan(source, ref, start, minutes) {
